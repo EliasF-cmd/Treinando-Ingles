@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Let's Talk!</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f7f4;
+    --primary: #2d6a4f;
+    --primary-light: #52b788;
+    --primary-pale: #d8f3dc;
+    --accent: #f4a261;
+    --accent-light: #fde8d0;
+    --teacher-bg: #e8f4fd;
+    --teacher-border: #74b9e5;
+    --user1: #2d6a4f;
+    --user2: #e07b39;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  header {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary), #40916c);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 3px 16px rgba(45,106,79,0.3);
+    flex-shrink: 0;
+  }
+  .logo { font-size: 28px; }
+  .header-text h1 { color: #fff; font-size: 20px; font-weight: 900; line-height: 1.1; }
+  .header-text p  { color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 600; }
+  .topic-badge {
+    margin-left: auto;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  #chatBox {
+    flex: 1;
+    width: 100%;
+    max-width: 640px;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+  #chatBox::-webkit-scrollbar { width: 3px; }
+  #chatBox::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  .msg { display: flex; gap: 10px; align-items: flex-end; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .avatar {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 2px;
+  }
+  .msg-body { flex: 1; display: flex; flex-direction: column; gap: 3px; max-width: calc(100% - 52px); }
+  .msg-name { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .bubble {
+    display: inline-block;
+    padding: 11px 15px;
+    border-radius: 18px;
+    font-size: 16px;
+    line-height: 1.55;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    max-width: 100%;
+    word-break: break-word;
+    transition: box-shadow 0.3s;
+  }
+  .msg.teacher .avatar { background: linear-gradient(135deg, #5bacd4, #2980b9); }
+  .msg.teacher .msg-name { color: #2980b9; }
+  .msg.teacher .bubble { background: var(--teacher-bg); border: 1.5px solid var(--teacher-border); color: #1a3a4e; border-bottom-left-radius: 5px; }
+  .msg.user1 { flex-direction: row-reverse; }
+  .msg.user1 .msg-body { align-items: flex-end; }
+  .msg.user1 .avatar { background: linear-gradient(135deg, #52b788, #2d6a4f); }
+  .msg.user1 .msg-name { color: var(--user1); }
+  .msg.user1 .bubble { background: var(--primary-pale); border: 1.5px solid var(--primary-light); color: #1a2e1f; border-bottom-right-radius: 5px; }
+  .msg.user2 .avatar { background: linear-gradient(135deg, #f4a261, #e07b39); }
+  .msg.user2 .msg-name { color: var(--user2); }
+  .msg.user2 .bubble { background: var(--accent-light); border: 1.5px solid var(--accent); color: #2e1a0e; border-bottom-left-radius: 5px; }
+  .bubble.speaking { box-shadow: 0 0 0 3px rgba(91,172,212,0.4) !important; }
+  .typing-bubble {
+    background: var(--teacher-bg); border: 1.5px solid var(--teacher-border);
+    border-radius: 18px; border-bottom-left-radius: 5px;
+    padding: 12px 16px; display: inline-flex; gap: 5px; align-items: center;
+  }
+  .typing-bubble span { width: 8px; height: 8px; background: #74b9e5; border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing-bubble span:nth-child(2){animation-delay:0.2s} .typing-bubble span:nth-child(3){animation-delay:0.4s}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+  .transcript-preview {
+    width: 100%; max-width: 640px;
+    padding: 0 16px 6px;
+    flex-shrink: 0;
+    min-height: 34px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .transcript-text {
+    font-size: 14px; color: var(--muted); font-style: italic; text-align: center;
+    padding: 5px 16px; background: rgba(255,255,255,0.8);
+    border-radius: 20px; max-width: 100%;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: opacity 0.3s; opacity: 0;
+  }
+  .controls {
+    width: 100%; max-width: 640px;
+    padding: 10px 20px 22px;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    flex-shrink: 0; background: var(--bg);
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .controls { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+  }
+  .speaker-row { display: flex; gap: 10px; width: 100%; }
+  .speaker-btn {
+    flex: 1; padding: 13px 10px;
+    border-radius: 14px; border: 2.5px solid transparent;
+    font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    opacity: 0.5;
+  }
+  .speaker-btn.s1 { background: var(--primary-pale); border-color: var(--primary-light); color: var(--primary); }
+  .speaker-btn.s2 { background: var(--accent-light); border-color: var(--accent); color: var(--user2); }
+  .speaker-btn.active { opacity: 1; transform: scale(1.03); }
+  .speaker-btn.s1.active { background: var(--primary); color: #fff; box-shadow: 0 4px 16px rgba(45,106,79,0.35); }
+  .speaker-btn.s2.active { background: var(--accent); color: #fff; box-shadow: 0 4px 16px rgba(244,162,97,0.4); }
+  .mic-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+  .mic-btn {
+    width: 86px; height: 86px; border-radius: 50%; border: none; cursor: pointer;
+    font-size: 34px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    background: var(--primary); color: #fff;
+    box-shadow: 0 6px 24px rgba(45,106,79,0.35);
+  }
+  .mic-btn:active { transform: scale(0.94); }
+  .mic-btn.recording {
+    background: #e74c3c;
+    box-shadow: 0 6px 24px rgba(231,76,60,0.45);
+    animation: micGlow 1.2s infinite;
+  }
+  @keyframes micGlow {
+    0%,100%{box-shadow:0 6px 24px rgba(231,76,60,0.4),0 0 0 0 rgba(231,76,60,0.3)}
+    50%{box-shadow:0 6px 24px rgba(231,76,60,0.4),0 0 0 14px rgba(231,76,60,0)}
+  }
+  .mic-label { font-size: 13px; font-weight: 700; color: var(--muted); text-align: center; }
+  .mic-label.active { color: #e74c3c; font-weight: 800; }
+  .ask-btn {
+    width: 100%; padding: 14px;
+    background: var(--teacher-bg); border: 2.5px dashed var(--teacher-border);
+    border-radius: 14px; font-family: 'Nunito', sans-serif;
+    font-size: 16px; font-weight: 800; color: #2980b9;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .ask-btn:hover { background: #d1eaf7; border-style: solid; }
+  .ask-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px; padding: 20px; text-align: center; color: var(--muted);
+  }
+  .empty-state .emoji { font-size: 52px; }
+  .empty-state h3 { font-size: 20px; font-weight: 800; color: var(--text); }
+  .empty-state p { font-size: 15px; line-height: 1.6; }
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55); z-index: 100;
+    align-items: flex-end; justify-content: center;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 30px 24px 44px; width: 100%; max-width: 640px;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+  .modal p { font-size: 15px; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+  .modal input {
+    width: 100%; border: 2px solid #d1d5db; border-radius: 12px;
+    padding: 14px 16px; font-family: 'Nunito', sans-serif; font-size: 17px;
+    font-weight: 700; margin-bottom: 12px; outline: none; background: var(--bg);
+  }
+  .modal input:focus { border-color: var(--primary-light); }
+  .modal-btn {
+    width: 100%; padding: 16px; background: var(--primary); color: #fff;
+    border: none; border-radius: 14px; font-family: 'Nunito', sans-serif;
+    font-size: 18px; font-weight: 900; cursor: pointer;
+  }
+  .topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .topic-chip {
+    padding: 14px 10px; border-radius: 12px; border: 2px solid #e0e0e0;
+    font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800;
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+    text-align: center; background: var(--bg);
+  }
+  .topic-chip.active { background: var(--primary-pale); border-color: var(--primary-light); color: var(--primary); }
+  .toast {
+    position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+    background: #1a1a2e; color: #fff; padding: 11px 22px;
+    border-radius: 30px; font-size: 14px; font-weight: 700;
+    z-index: 200; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; white-space: nowrap; max-width: 90vw;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌿</div>
+  <div class="header-text">
+    <h1>Let's Talk!</h1>
+    <p>Inglês na Conversa</p>
+  </div>
+  <div class="topic-badge" onclick="openTopicModal()">📌 <span id="topicBadge">Cumprimentos</span></div>
+</header>
+
+<div id="chatBox">
+  <div class="empty-state" id="emptyState">
+    <div class="emoji">🎤</div>
+    <h3>Prontos pra falar?</h3>
+    <p>Escolham quem vai falar, toquem o microfone e comecem em inglês. Após uma pausa, o que disseram aparece automaticamente!</p>
+  </div>
+</div>
+
+<div class="transcript-preview">
+  <div class="transcript-text" id="transcriptPreview"></div>
+</div>
+
+<div class="controls">
+  <div class="speaker-row">
+    <button class="speaker-btn s1 active" id="btnS1" onclick="setSpeaker(1)">
+      🧑 <span id="name1Label">Pessoa 1</span>
+    </button>
+    <button class="speaker-btn s2" id="btnS2" onclick="setSpeaker(2)">
+      👴 <span id="name2Label">Pessoa 2</span>
+    </button>
+  </div>
+  <div class="mic-wrap">
+    <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+    <div class="mic-label" id="micLabel">Toque para falar</div>
+  </div>
+  <button class="ask-btn" id="askBtn" onclick="askTeacher()">
+    🎓 Pedir correção à professora
+  </button>
+</div>
+
+<!-- SETUP -->
+<div class="overlay show" id="setupOverlay">
+  <div class="modal">
+    <h2>🌿 Bem-vindos!</h2>
+    <p>Qual o nome de vocês dois? Deixa a conversa mais gostosa 😊</p>
+    <input id="inputName1" placeholder="Nome — Pessoa 1 (ex: Maria)" maxlength="20">
+    <input id="inputName2" placeholder="Nome — Pessoa 2 (ex: Avô João)" maxlength="20">
+    <button class="modal-btn" onclick="saveNames()">Vamos começar! 🚀</button>
+  </div>
+</div>
+
+<!-- TOPIC -->
+<div class="overlay" id="topicOverlay">
+  <div class="modal">
+    <h2>📌 Escolha o tema</h2>
+    <p>A professora vai adaptar as correções ao tema.</p>
+    <div class="topic-grid" id="topicGrid"></div>
+    <button class="modal-btn" onclick="closeTopicModal()">Confirmar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let speaker = 1;
+let names = { 1: 'Pessoa 1', 2: 'Pessoa 2' };
+let currentTopic = 'Apresentações e cumprimentos';
+let conversationHistory = [];
+let isRecording = false;
+let recognition = null;
+let isTeacherThinking = false;
+let silenceTimer = null;
+
+const topics = [
+  { label: '👋 Cumprimentos',  value: 'Apresentações e cumprimentos' },
+  { label: '🛒 Mercado',       value: 'Compras no mercado' },
+  { label: '🍽️ Restaurante',  value: 'Pedir comida no restaurante' },
+  { label: '🗺️ Direções',     value: 'Pedir informações na cidade' },
+  { label: '🏥 Médico',        value: 'Consulta médica simples' },
+  { label: '🏨 Hotel',         value: 'Reservar um hotel' },
+  { label: '✈️ Aeroporto',    value: 'No aeroporto' },
+  { label: '💬 Livre',         value: 'Conversa livre em inglês' },
+];
+
+function saveNames() {
+  names[1] = document.getElementById('inputName1').value.trim() || 'Pessoa 1';
+  names[2] = document.getElementById('inputName2').value.trim() || 'Pessoa 2';
+  document.getElementById('name1Label').textContent = names[1];
+  document.getElementById('name2Label').textContent = names[2];
+  document.getElementById('setupOverlay').classList.remove('show');
+  buildTopicGrid();
+  showToast('Bem-vindos, ' + names[1] + ' e ' + names[2] + '! 🎉');
+}
+
+function buildTopicGrid() {
+  const grid = document.getElementById('topicGrid');
+  grid.innerHTML = '';
+  topics.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'topic-chip' + (t.value === currentTopic ? ' active' : '');
+    btn.textContent = t.label;
+    btn.onclick = () => {
+      document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      currentTopic = t.value;
+      document.getElementById('topicBadge').textContent = t.label.replace(/^\S+\s*/,'').trim() || t.label;
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function openTopicModal() { buildTopicGrid(); document.getElementById('topicOverlay').classList.add('show'); }
+function closeTopicModal() {
+  document.getElementById('topicOverlay').classList.remove('show');
+  conversationHistory = [];
+  showToast('Tema alterado! Conversa reiniciada 🔄');
+}
+
+function setSpeaker(n) {
+  speaker = n;
+  document.getElementById('btnS1').classList.toggle('active', n === 1);
+  document.getElementById('btnS2').classList.toggle('active', n === 2);
+  if (isRecording) {
+    document.getElementById('micLabel').textContent = '🎙️ Vez de ' + names[n] + ' — pode falar!';
+  }
+}
+
+async function toggleMic() {
+  if (isTeacherThinking) { showToast('Aguarde a professora terminar...'); return; }
+  window.speechSynthesis.cancel();
+
+  if (isRecording) { stopRecording(); return; }
+
+  // Verificar suporte à API de voz
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showToast('Use o Chrome ou Safari para usar o microfone 🎤');
+    return;
+  }
+
+  // Verificar se está em contexto seguro (HTTPS ou localhost)
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    // Arquivo local — tenta mesmo assim, alguns browsers permitem
+    console.warn('Não é HTTPS, mas tentando mesmo assim...');
+  }
+
+  // Pedir permissão de microfone explicitamente
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop()); // libera, só precisávamos da permissão
+      startRecording();
+    } catch (err) {
+      console.error('Mic permission error:', err.name, err.message);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showToast('❌ Permissão negada! Toque no 🔒 do navegador e permita o microfone.');
+      } else if (err.name === 'NotFoundError') {
+        showToast('❌ Nenhum microfone encontrado no dispositivo.');
+      } else {
+        showToast('❌ Erro de microfone: ' + err.name + '. Tente no Chrome.');
+      }
+    }
+  } else {
+    // Fallback: tenta direto sem pedir permissão (alguns browsers antigos)
+    startRecording();
+  }
+}
+
+function startRecording() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Use o Chrome para reconhecimento de voz 🎤'); return; }
+
+  isRecording = true;
+  document.getElementById('micBtn').classList.add('recording');
+  document.getElementById('micBtn').textContent = '⏹';
+  document.getElementById('micLabel').textContent = '🎙️ Vez de ' + names[speaker] + ' — pode falar!';
+  document.getElementById('micLabel').classList.add('active');
+
+  let accumulatedText = '';
+
+  function createAndStart() {
+    if (!isRecording) return;
+
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;   // false = mais estável em mobile
+    recognition.interimResults = true;
+
+    recognition.onresult = (e) => {
+      clearTimeout(silenceTimer);
+      let interim = '', final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      if (final) accumulatedText += (accumulatedText ? ' ' : '') + final.trim();
+
+      const shown = (accumulatedText + (interim ? ' ' + interim : '')).trim();
+      const preview = document.getElementById('transcriptPreview');
+      if (shown) { preview.textContent = shown; preview.style.opacity = '1'; }
+
+      // Agendar envio 2s após última fala
+      if (accumulatedText) {
+        silenceTimer = setTimeout(() => {
+          const text = accumulatedText.trim();
+          accumulatedText = '';
+          // NÃO para o recognition — só envia e continua ouvindo
+          sendVoiceMessage(text);
+        }, 2000);
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('Speech error:', e.error);
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      if (e.error === 'not-allowed') {
+        showToast('❌ Microfone bloqueado! Permita nas configurações do navegador.');
+        stopRecording(); return;
+      }
+      if (e.error === 'network') {
+        showToast('⚠️ Erro de rede — o reconhecimento de voz precisa de internet.');
+        stopRecording(); return;
+      }
+      // outros: só loga, reinicia no onend
+    };
+
+    recognition.onend = () => {
+      if (isRecording) {
+        setTimeout(createAndStart, 200);
+      }
+    };
+
+    try {
+      recognition.start();
+      console.log('Recognition started OK');
+    } catch(err) {
+      console.error('recognition.start() threw:', err);
+      setTimeout(createAndStart, 500);
+    }
+  }
+
+  createAndStart();
+}
+
+function stopRecording() {
+  isRecording = false;
+  clearTimeout(silenceTimer);
+  silenceTimer = null;
+  try { recognition?.abort(); } catch(e) {}
+  recognition = null;
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('micLabel').textContent = 'Toque para falar';
+  document.getElementById('micLabel').classList.remove('active');
+  document.getElementById('transcriptPreview').style.opacity = '0';
+}
+
+function sendVoiceMessage(text) {
+  if (!text) return;
+  addMessage(speaker, text);
+  conversationHistory.push({ who: names[speaker], text });
+  setSpeaker(speaker === 1 ? 2 : 1);
+  // Microfone continua ativo — não para gravação
+  document.getElementById('transcriptPreview').style.opacity = '0';
+}
+
+function addMessage(who, text, speak = false) {
+  const box = document.getElementById('chatBox');
+  document.getElementById('emptyState')?.remove();
+  const cls   = who === 'teacher' ? 'teacher' : (who === 1 ? 'user1' : 'user2');
+  const emoji = who === 'teacher' ? '🎓' : (who === 1 ? '🧑' : '👴');
+  const label = who === 'teacher' ? 'Professora IA' : names[who];
+  const div = document.createElement('div');
+  div.className = `msg ${cls}`;
+  div.innerHTML = `
+    <div class="avatar">${emoji}</div>
+    <div class="msg-body">
+      <span class="msg-name">${label}</span>
+      <div class="bubble">${escapeHtml(text)}</div>
+    </div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  if (speak) speakText(text, div.querySelector('.bubble'));
+  return div;
+}
+
+function speakText(text, bubbleEl) {
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'pt-BR';
+  utter.rate = 0.9;
+  utter.pitch = 1.05;
+  if (bubbleEl) {
+    utter.onstart = () => bubbleEl.classList.add('speaking');
+    utter.onend   = () => bubbleEl.classList.remove('speaking');
+  }
+  window.speechSynthesis.speak(utter);
+}
+
+async function askTeacher() {
+  if (isTeacherThinking) return;
+  if (conversationHistory.length === 0) { showToast('Falem algo primeiro! 🎤'); return; }
+  window.speechSynthesis.cancel();
+  stopRecording();
+  isTeacherThinking = true;
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Professora analisando...';
+
+  const box = document.getElementById('chatBox');
+  const typing = document.createElement('div');
+  typing.className = 'msg teacher'; typing.id = 'typingDot';
+  typing.innerHTML = `<div class="avatar">🎓</div><div class="msg-body"><span class="msg-name">Professora IA</span><div class="typing-bubble"><span></span><span></span><span></span></div></div>`;
+  box.appendChild(typing);
+  box.scrollTop = box.scrollHeight;
+
+  const convText = conversationHistory.map(m => `${m.who}: "${m.text}"`).join('\n');
+  const system = `Você é uma professora de inglês simpática, paciente e encorajadora.
+Ajuda dois estudantes brasileiros a praticar inglês básico por voz.
+Responda SEMPRE em português, de forma simples. Um dos alunos é mais idoso, seja clara e gentil.
+1. Elogie algo específico
+2. Corrija 1 a 2 erros com gentileza
+3. Mostre a forma mais natural
+4. Dê uma palavra nova útil pro tema
+5. Incentive a continuar
+Máximo 100 palavras. Sem markdown, sem asteriscos. Texto simples.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system,
+        messages: [{ role: 'user', content: `Tema: ${currentTopic}\n\nConversa:\n${convText}\n\nDê seu feedback.` }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.find(b => b.type === 'text')?.text || 'Não consegui analisar. Tente novamente!';
+    document.getElementById('typingDot')?.remove();
+    addMessage('teacher', reply, true);
+  } catch (err) {
+    document.getElementById('typingDot')?.remove();
+    addMessage('teacher', 'Ops! Sem conexão. Verifique a internet e tente novamente.');
+  }
+
+  isTeacherThinking = false;
+  btn.disabled = false;
+  btn.innerHTML = '🎓 Pedir correção à professora';
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+buildTopicGrid();
+</script>
+</body>
+</html>
